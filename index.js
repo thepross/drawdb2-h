@@ -1,27 +1,28 @@
-//Importamos Express tras instalarlo vía NPM
 var express = require('express');
+var app = express();
+var http = require('http').Server(app);
+var io = require('socket.io')(http);
 
-// Definimos App como la función del módulo Express
-var App = express();
+app.use(express.static(__dirname + '/'));
+app.get('/', function(req, res){
+    res.sendFile(__dirname + '/index.html');
+});
 
-// Definimos algunas variables que usaremos en las distintas funciones
-var port = process.env.PORT || 3000;
-var options = {
-    root: __dirname
-};
+io.on('connection', function (socket) {
+    console.log('a user connected');
+    socket.on('disconnect', function(){
+        console.log('user disconnected');
+    });
+    socket.on('chat message', function(msg){
+        io.emit('chat message', msg);
+    });
 
-// Definimos funciones para luego usarlas al recibir una petición en el router
-function getHTML(req, res) {
-    res.sendFile('./index.html', options, (err) => {
-        if (err) throw err;
-    console.log('Sirviendo index.html')
-})
-};
+    socket.on('draw', function (data) {
+        socket.broadcast.emit('draw', data);
+    });
+});
 
-// Definimos las rutas
-App.get('/', getHTML);
-
-// Escuchamos el puerto de Express
-App.listen(port, function () {
-    console.log('Aplicacion escuchando en el puerto: ' + port)
+const port = process.env.PORT || 3000;
+http.listen(port, function(){
+    console.log('listening on *:' + port);
 });
